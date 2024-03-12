@@ -1,17 +1,16 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QUICKBIT URL SHORTNER</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <title>QUICKBIT URL SHORTENER</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <div class="jumbotron mt-5">
-            <h1 class="display-4">Short URL Tool</h1>
+            <h2 class="display-4">QuickBit Url Shortner</h2>
             <div id="authSection">
                 <div id="loginForm" class="mb-3">
                     <h2>Login</h2>
@@ -37,18 +36,28 @@
             </div>
       
             <div id="urlSection" style="display: none;">
-              <h2>Shorten URL</h2>
+                <h3>Shorten URL</h3>
 
-              <form id="urlForm">
-                  <label for="longUrl">Long URL:</label>
-                  <input type="url" id="longUrl" name="longUrl" required>
-                  <button type="button" onclick="shortenUrl()">Shorten URL</button>
-              </form>
+                <form id="urlForm" class="my-4 form-inline">
+                    <label for="longUrl" class="sr-only">Long URL:</label>
+                    <input placeholder="Long Url" type="url" id="longUrl" name="longUrl" required class="form-control col mr-2">
+                    <input placeholder="Custom Domain?" type="text" name="customUrl" id="customUrl" class="form-control col mr-2">
+                    <button class="btn btn-success" type="button" onclick="shortenUrl()">Shorten URL</button>
+                </form>
 
-              <div id="history">
-                  <h2>URL History</h2>
-                  <ul id="urlList"></ul>
-              </div>
+                <div id="history">
+                    <h2>URL History</h2>
+                    <table class="table table-stripped table responsive">
+                        <thead>
+                            <tr>
+                                <th>Original URL</th>
+                                <th>Short URL</th>
+                                <th>Clicks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="urlList"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

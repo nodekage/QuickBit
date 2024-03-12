@@ -15,11 +15,14 @@ function showLoginForm() {
 }
 
 async function login() {
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+
+    const username = usernameInput.value;
+    const password = passwordInput.value;
 
     try {
-        const response = await fetch('http://localhost:3000/api/auth/login', {
+        const response = await fetch('http://localhost:8400/api/auth/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -28,25 +31,37 @@ async function login() {
         });
 
         if (!response.ok) {
+            const errorDetails = await response.json();
+            console.error('Error during login. Server response:', errorDetails);
             throw new Error('Invalid credentials');
         }
 
         const result = await response.json();
-        token = result.token;
+        const token = result.token;
+        localStorage.setItem('token', token);
         displayResult('Login successful!');
         showUrlSection();
+
+        // Clear the input values
+        usernameInput.value = '';
+        passwordInput.value = '';
     } catch (error) {
         console.error('Error during login:', error.message);
-        displayError('Invalid credentials');
+        displayError('Invalid credentials, Error during login');
     }
 }
 
+
+
 async function register() {
-    const newUsername = document.getElementById('newUsername').value;
-    const newPassword = document.getElementById('newPassword').value;
+    const newUsernameInput = document.getElementById('newUsername');
+    const newPasswordInput = document.getElementById('newPassword');
+
+    const newUsername = newUsernameInput.value;
+    const newPassword = newPasswordInput.value;
 
     try {
-        const response = await fetch('http://localhost:3000/api/auth/register', {
+        const response = await fetch('http://localhost:8400/api/auth/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -60,23 +75,35 @@ async function register() {
 
         displayResult('Registration successful! You can now log in.');
         showLoginForm();
+
+        // Clear the input values
+        newUsernameInput.value = '';
+        newPasswordInput.value = '';
     } catch (error) {
         console.error('Error during registration:', error.message);
         displayError('Registration failed');
     }
 }
 
+
 async function shortenUrl() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        // Handle the case when the token is not available
+        console.error('Token not available. User may be logged out.');
+        return;
+    }
     const longUrl = document.getElementById('longUrl').value;
+    const customUrl = document.getElementById('customUrl').value;
 
     try {
-        const response = await fetch('http://localhost:3000/api/url', {
+        const response = await fetch('http://localhost:8400/api/url/shorten', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': token ? `Bearer ${token}` : '',
+                'Authorization': `${token}`,
             },
-            body: JSON.stringify({ originalUrl: longUrl }),
+            body: JSON.stringify({ originalUrl: longUrl, customUrl: customUrl }),
         });
 
         if (!response.ok) {
@@ -92,27 +119,73 @@ async function shortenUrl() {
     }
 }
 
+
 async function updateHistory() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        // Handle the case when the token is not available
+        console.error('Token not available. User may be logged out.');
+        return;
+    }
     try {
-        const response = await fetch('http://localhost:3000/api/user/urls', {
+        const response = await fetch('http://localhost:8400/api/url/history', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': token ? `Bearer ${token}` : '',
+                'Authorization': `${token}`,
             },
         });
 
         if (!response.ok) {
-            throw new Error('Failed to fetch URL history');
+            throw new Error('Failed to fetch URL history: backend error res');
         }
 
-        const urls = await response.json();
-        displayHistory(urls);
+        const result = await response.json();
+
+        if (Array.isArray(result.history)) {
+            displayHistory(result.history);
+        } else {
+            throw new Error('Invalid response format: history is not an array');
+        }
+
     } catch (error) {
         console.error('Error fetching URL history:', error.message);
         displayError('Failed to fetch URL history');
     }
+}  
+
+
+async function redirect(shortUrl) {
+    try {
+        const response = await fetch(`http://localhost:8400/api/url/redirect/${shortUrl}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorDetails = await response.json();
+            console.error('Error during redirection. Server response:', errorDetails);
+            throw new Error('Failed to redirect');
+        }
+
+        const result = await response.json();
+        console.log(result.originalUrl)
+        window.open(result.originalUrl, '_blank'); // Open the received URL in a new tab
+    } catch (error) {
+        console.error('Error during redirection:', error.message);
+        displayError('Failed to redirect');
+    }
 }
+
+
+
+
+
+
+
 
 function displayResult(message) {
     document.getElementById('result').innerHTML = message;
@@ -130,12 +203,41 @@ function showUrlSection() {
 }
 
 function displayHistory(urls) {
-    const urlList = document.getElementById('urlList');
-    urlList.innerHTML = '';
+    const tbody = document.getElementById('urlList');
+    tbody.innerHTML = ''; // Clear existing content
 
-    urls.forEach(url => {
-        const listItem = document.createElement('li');
-        listItem.innerHTML = `<strong>Original URL:</strong> ${url.originalUrl} | <strong>Short URL:</strong> <a href="${url.shortUrl}" target="_blank">${url.shortUrl}</a> | <strong>Clicks:</strong> ${url.clicks}`;
-        urlList.appendChild(listItem);
-    });
+    if (urls.length === 0) {
+        const noHistoryMessage = document.createElement('tr');
+        const noHistoryCell = document.createElement('td');
+        noHistoryCell.colSpan = 3; // Match the number of columns in the table
+        noHistoryCell.textContent = 'No URL history available.';
+        noHistoryMessage.appendChild(noHistoryCell);
+        tbody.appendChild(noHistoryMessage);
+    } else {
+        urls.forEach(url => {
+            const row = document.createElement('tr');
+
+            const originalUrlCell = document.createElement('td');
+            originalUrlCell.textContent = url.originalUrl;
+            row.appendChild(originalUrlCell);
+
+            const shortUrlCell = document.createElement('td');
+            const shortUrlLink = document.createElement('a');
+            shortUrlLink.href = url.shortUrl;
+            shortUrlLink.target = '_blank';
+            shortUrlLink.textContent = url.shortUrl;
+            shortUrlCell.appendChild(shortUrlLink);
+            row.appendChild(shortUrlCell);
+
+            const clicksCell = document.createElement('td');
+            clicksCell.textContent = url.clicks;
+            row.appendChild(clicksCell);
+
+            row.addEventListener('click', () => redirect(url.shortUrl));
+
+            tbody.appendChild(row);
+        });
+    }
 }
+
+
