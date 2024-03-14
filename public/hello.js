@@ -156,6 +156,11 @@ async function updateHistory() {
 
 
 async function redirect(shortUrl) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.error('Token not available. User may be logged out.');
+        return;
+    }
     try {
         const response = await fetch(`http://localhost:8400/api/url/redirect/${shortUrl}`, {
             method: 'GET',
@@ -172,13 +177,23 @@ async function redirect(shortUrl) {
         }
 
         const result = await response.json();
-        console.log(result.originalUrl)
-        window.open(result.originalUrl, '_blank'); // Open the received URL in a new tab
+        const originalUrl = result.originalUrl;
+
+        // Check if the original URL is defined
+        if (originalUrl) {
+            // Open the original URL in a new tab
+            window.open(originalUrl, '_blank');
+        } else {
+            console.error('Original URL is undefined');
+            throw new Error('Original URL is undefined');
+        }
+
     } catch (error) {
         console.error('Error during redirection:', error.message);
         displayError('Failed to redirect');
     }
 }
+
 
 
 

@@ -55,21 +55,21 @@ exports.getUserHistory = async (req, res) => {
 
   exports.redirectUrl = async (req, res) => {
     try {
-      const { shortUrl } = req.params;
-      console.log(shortUrl)
-      const url = await Url.findOne({ shortUrl });
-  
-      if (!url) {
-        return res.status(404).json({ error: 'URL not found' });
-      }
-  
-      url.clicks += 1;
-      await url.save();
+        const { shortUrl } = req.params;
+        const url = await Url.findOne({ shortUrl });
 
-      console.log(`Redirecting to: ${url.originalUrl}`);
-      res.json({ originalUrl: url.originalUrl });
+        if (!url) {
+            return res.status(404).json({ error: 'URL not found' });
+        }
+
+        // Increment the clicks
+        url.clicks += 1;
+        await url.save();
+
+        res.json({ originalUrl: url.originalUrl }); 
     } catch (error) {
-      res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
-  };
+};
+
   

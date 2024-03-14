@@ -6,17 +6,18 @@ const dotenv = require('dotenv');
 
 
 const app = express();
+
+
+app.use(express.static(path.join(__dirname, 'public')));
+
 dotenv.config();
 const PORT = process.env.PORT || 3000;
 
+
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json())
-app.use (cors({
-    origin : '*'
-}))
+app.use(cors())
 
-// Serve static files from the 'public' directory
-app.use(express.static(path.join(__dirname, 'public')));
 
 require('./db/mongoDB').connectToMongoDB()
 app.use(bodyParser.json());
